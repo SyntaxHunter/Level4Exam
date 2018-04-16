@@ -1,14 +1,18 @@
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class AnagramFinder {
 
 	public static void main(String[] args) {
-		ArrayList<String> dict = parseURL("https://raw.githubusercontent.com/eneko/data-repository/master/data/words.txt");
+		List<String> dict = buildDict("https://raw.githubusercontent.com/eneko/data-repository/master/data/words.txt");
 		
 		System.out.println("This program finds all the anagrams of a given word in the English dictionary.\n");
 		
@@ -17,7 +21,7 @@ public class AnagramFinder {
 		String word = scan.nextLine();
 		scan.close();
 		
-		ArrayList<String> anagrams = findAnagrams(dict, word);
+		List<String> anagrams = findAnagrams(dict, word);
 		System.out.println("\nAnagrams of " + word + ":");
 		for(int i = 0; i < anagrams.size(); i++) {
 			System.out.println(anagrams.get(i));
@@ -25,27 +29,36 @@ public class AnagramFinder {
 		
 	}
 	
-	public static ArrayList<String> parseURL(String aURL) {
-		ArrayList<String> dict = new ArrayList<String>();
+	public static List<String> buildDict(String aURL) {
+		List<String> dict = new ArrayList<String>();
 		
-		try { 
-			URL url = new URL(aURL);
-			URLConnection urlConnection = url.openConnection();
-			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+		URLConnection urlConnection = null;
+	
+		try {
+			urlConnection = new URL(aURL).openConnection();
+		} catch (MalformedURLException e1) {
+			e1.printStackTrace();
+		} catch (IOException e2) {
+			e2.printStackTrace();
+		}
 		
+		if(urlConnection == null)
+			return dict;
+		
+		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));) { 
 			String word;
 			while((word = bufferedReader.readLine()) != null) {
 				dict.add(word);
 			}
-			bufferedReader.close();
-		} catch (Exception e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
 		return dict;
 	}
 	
-	public static ArrayList<String> findAnagrams(ArrayList<String> dict, String word){
-		ArrayList<String> matches = new ArrayList<String>();
+	public static List<String> findAnagrams(List<String> dict, String word){
+		List<String> matches = new ArrayList<String>();
 		
 		int wordLength = word.length();
 		String test;
@@ -59,23 +72,13 @@ public class AnagramFinder {
 		return matches;
 	}
 	
-	public static boolean checkForMatch(String base, String test) {
-		int same = 0;
-		String letter;
+	private static boolean checkForMatch(String word1, String word2) {
+		char[] word1Array = word1.toCharArray();
+		char[] word2Array = word2.toCharArray();
 		
-		for(int i = 0; i < base.length(); i++) {
-			letter = base.substring(i, i + 1);
-			if(test.contains(letter)) {
-				test = test.replaceFirst(letter, "");
-				same += 1;
-			} else {
-				return false;
-			}
-		}
-		if(same == base.length()) {
-			return true;
-		} else { 
-			return false;
-		}
+		Arrays.sort(word1Array);
+		Arrays.sort(word2Array);
+		
+		return Arrays.equals(word1Array, word2Array);
 	}
 }
